@@ -1,0 +1,32 @@
+/* src/theme/variables.css */
+
+:root {
+  /* Colores principales */
+  --ion-color-primary: #7c3aed;
+  --ion-color-primary-rgb: 124, 58, 237;
+  --ion-color-primary-contrast: #cfc4ec;
+
+  --ion-color-secondary: #06b6d4;
+  --ion-color-secondary-rgb: 6, 182, 212;
+  --ion-color-secondary-contrast: #ffffff;
+
+  /* Fondo general */
+  --app-bg: #f6f7fb;
+}
+
+/* Fondo de toda la app */
+ion-content {
+  --background: var(--app-bg);
+}
+
+/* Header más limpio */
+ion-toolbar {
+  --background: #7c3aed;
+  --border-color: transparent;
+}
+
+/* Título con más “peso” */
+ion-title {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
