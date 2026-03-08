@@ -1,5 +1,6 @@
 import {
   IonAvatar,
+  IonButton,
   IonContent,
   IonHeader,
   IonImg,
@@ -9,17 +10,26 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react'
+
+import { useHistory } from 'react-router-dom'
 import { loadMedico } from '../storage'
+import { logout } from '../auth'
 
 export default function PerfilMedicoPage() {
   const medico = loadMedico()
+  const history = useHistory()
 
   const iniciales = medico.nombre
     .split(' ')
-    .map(parte => parte[0])
+    .map(x => x[0])
     .join('')
     .slice(0, 2)
     .toUpperCase()
+
+  const handleLogout = () => {
+    logout()
+    history.push('/login')
+  }
 
   return (
     <IonPage>
@@ -30,6 +40,7 @@ export default function PerfilMedicoPage() {
       </IonHeader>
 
       <IonContent className="ion-padding">
+
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
           <IonAvatar style={{ width: 96, height: 96 }}>
             {medico.foto ? (
@@ -61,6 +72,16 @@ export default function PerfilMedicoPage() {
             <p>{medico.email}</p>
           </IonLabel>
         </IonItem>
+
+        <IonButton
+          expand="block"
+          color="danger"
+          className="ion-margin-top"
+          onClick={handleLogout}
+        >
+          Cerrar sesión
+        </IonButton>
+
       </IonContent>
     </IonPage>
   )
