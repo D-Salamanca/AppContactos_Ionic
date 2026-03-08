@@ -1,160 +1,195 @@
 import {
+  IonAlert,
   IonContent,
   IonHeader,
+  IonItem,
+  IonItemOption,
+  IonItemOptions,
+  IonItemSliding,
+  IonLabel,
+  IonList,
   IonPage,
+  IonReorder,
+  IonReorderGroup,
+  IonSegment,
+  IonSegmentButton,
   IonTitle,
   IonToolbar,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonFab,
-  IonFabButton,
-  IonIcon,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption,
+  ItemReorderEventDetail,
   useIonViewWillEnter,
-  IonButtons,
-  IonButton,
-  IonAlert,
 } from '@ionic/react'
-import { add } from 'ionicons/icons'
-import { useState } from 'react'
 import { useHistory } from 'react-router-dom'
-import { loadContacts, saveContacts } from '../storage'
-import type { Contact } from '../types'
-import { logout } from '../auth'
+import { useState } from 'react'
+import { loadVisitas, saveVisitas } from '../storage'
+import type { EstadoVisita, Visita } from '../types'
 import './Home.css'
 
-const buildPreContacts = (): Contact[] => {
-  const now = new Date().toISOString()
-  return [
-    { id: 1, name: 'Ana', phone: 3001234567, createdAt: now, updatedAt: now },
-    { id: 2, name: 'Luis', phone: 3119876543, createdAt: now, updatedAt: now },
-    { id: 3, name: 'Sofía', phone: 3205554444, createdAt: now, updatedAt: now },
-  ]
-}
-
-const Home: React.FC = () => {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [showAlert, setShowAlert] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-
+const Home: React.FC<{
+  refreshPendientes: () => void
+}> = ({ refreshPendientes }) => {
   const history = useHistory()
 
+  const [visitas, setVisitas] = useState<Visita[]>([])
+  const [segment, setSegment] = useState<'todas' | EstadoVisita>('todas')
+  const [showCancelAlert, setShowCancelAlert] = useState(false)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+
   useIonViewWillEnter(() => {
-    let current = loadContacts()
-
-    if (current.length === 0) {
-      const pre = buildPreContacts()
-      saveContacts(pre)
-      current = pre
-    }
-
-    setContacts(current)
+    const data = loadVisitas()
+    setVisitas(data)
+    refreshPendientes()
   })
 
-  const confirmDelete = (id: number) => {
-    setSelectedId(id)
-    setShowAlert(true)
+  const updateVisitas = (updated: Visita[]) => {
+    setVisitas(updated)
+    saveVisitas(updated)
+    refreshPendientes()
   }
 
-  const deleteContact = () => {
+  const marcarEnCamino = (id: number) => {
+    const updated = visitas.map(v =>
+      v.id === id ? { ...v, estado: 'en_camino' } : v
+    )
+    updateVisitas(updated)
+  }
+
+  const cancelarVisita = (motivo: string) => {
     if (selectedId === null) return
 
-    const updated = contacts.filter(c => c.id !== selectedId)
-    setContacts(updated)
-    saveContacts(updated)
+    const updated = visitas.map(v =>
+      v.id === selectedId
+        ? { ...v, estado: 'cancelada', motivoCancelacion: motivo }
+        : v
+    )
 
-    setShowAlert(false)
+    updateVisitas(updated)
     setSelectedId(null)
   }
 
-  const handleLogout = () => {
-    logout()
-    history.push('/login')
+  const pendientes = visitas.filter(v => v.estado === 'pendiente')
+  const fijas = visitas.filter(v => v.estado !== 'pendiente')
+
+  const orderedVisitas = [...pendientes, ...fijas]
+
+  const filtered =
+    segment === 'todas'
+      ? orderedVisitas
+      : orderedVisitas.filter(v => v.estado === segment)
+
+  const handleReorder = (event: CustomEvent<ItemReorderEventDetail>) => {
+    const reorderedPendientes = event.detail.complete([...pendientes]) as Visita[]
+    const updated = [...reorderedPendientes, ...fijas]
+    updateVisitas(updated)
   }
+
+  const renderVisita = (v: Visita) => (
+    <IonItemSliding key={v.id}>
+      <IonItem className="home-item">
+        {v.estado === 'pendiente' && <IonReorder slot="start" />}
+
+        <IonLabel>
+          <h2 className="home-name">{v.paciente}</h2>
+          <p className="home-phone">
+            {v.hora} • {v.direccion}
+          </p>
+          <p className="home-phone">Estado: {v.estado}</p>
+        </IonLabel>
+      </IonItem>
+
+      <IonItemOptions side="start">
+        <IonItemOption color="primary" onClick={() => marcarEnCamino(v.id)}>
+          En camino
+        </IonItemOption>
+
+        <IonItemOption
+          color="danger"
+          onClick={() => {
+            setSelectedId(v.id)
+            setShowCancelAlert(true)
+          }}
+        >
+          Cancelar
+        </IonItemOption>
+      </IonItemOptions>
+
+      <IonItemOptions side="end">
+        <IonItemOption
+          color="secondary"
+          onClick={() => history.push(`/tabs/visitas/${v.id}`)}
+        >
+          Ver detalle
+        </IonItemOption>
+      </IonItemOptions>
+    </IonItemSliding>
+  )
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Contacts</IonTitle>
-
-          <IonButtons slot="end">
-            <IonButton onClick={handleLogout}>Logout</IonButton>
-          </IonButtons>
+          <IonTitle>Visitas del día</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
         <div className="home-wrap">
+          <IonSegment
+            value={segment}
+            onIonChange={e => setSegment(e.detail.value as 'todas' | EstadoVisita)}
+          >
+            <IonSegmentButton value="todas">
+              <IonLabel>Todas</IonLabel>
+            </IonSegmentButton>
 
-          <IonList className="home-list">
-            {contacts.map(c => (
-              <IonItemSliding key={c.id}>
+            <IonSegmentButton value="pendiente">
+              <IonLabel>Pendientes</IonLabel>
+            </IonSegmentButton>
 
-                <IonItem
-                  className="home-item"
-                  button
-                  routerLink={`/contacts/detail/${c.id}`}
-                >
-                  <IonLabel>
-                    <h2 className="home-name">{c.name}</h2>
-                    <p className="home-phone">{c.phone}</p>
-                  </IonLabel>
-                </IonItem>
+            <IonSegmentButton value="en_curso">
+              <IonLabel>En curso</IonLabel>
+            </IonSegmentButton>
 
-                <IonItemOptions side="end">
-                  <IonItemOption
-                    color="primary"
-                    routerLink={`/contacts/edit/${c.id}`}
-                  >
-                    Edit
-                  </IonItemOption>
+            <IonSegmentButton value="finalizada">
+              <IonLabel>Finalizadas</IonLabel>
+            </IonSegmentButton>
+          </IonSegment>
 
-                  <IonItemOption
-                    color="danger"
-                    onClick={() => confirmDelete(c.id)}
-                  >
-                    Delete
-                  </IonItemOption>
-                </IonItemOptions>
-
-              </IonItemSliding>
-            ))}
-          </IonList>
-
+          {(segment === 'todas' || segment === 'pendiente') ? (
+            <IonReorderGroup disabled={false} onIonItemReorder={handleReorder}>
+              <IonList className="home-list">
+                {filtered.map(renderVisita)}
+              </IonList>
+            </IonReorderGroup>
+          ) : (
+            <IonList className="home-list">
+              {filtered.map(renderVisita)}
+            </IonList>
+          )}
         </div>
 
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton routerLink="/contacts/create">
-            <IonIcon icon={add} />
-          </IonFabButton>
-        </IonFab>
-
         <IonAlert
-          isOpen={showAlert}
-          header="Eliminar contacto"
-          message="¿Estás seguro que deseas eliminar este contacto?"
-          buttons={[
+          isOpen={showCancelAlert}
+          header="Cancelar visita"
+          inputs={[
             {
-              text: 'Cancelar',
-              role: 'cancel',
-              handler: () => {
-                setShowAlert(false)
-                setSelectedId(null)
-              },
-            },
-            {
-              text: 'Eliminar',
-              role: 'destructive',
-              handler: deleteContact,
+              name: 'motivo',
+              type: 'textarea',
+              placeholder: 'Motivo de cancelación',
             },
           ]}
-          onDidDismiss={() => setShowAlert(false)}
+          buttons={[
+            {
+              text: 'Volver',
+              role: 'cancel',
+              handler: () => setSelectedId(null),
+            },
+            {
+              text: 'Confirmar',
+              handler: data => cancelarVisita(data.motivo || ''),
+            },
+          ]}
+          onDidDismiss={() => setShowCancelAlert(false)}
         />
-
       </IonContent>
     </IonPage>
   )

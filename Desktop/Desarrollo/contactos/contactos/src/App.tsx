@@ -1,14 +1,28 @@
-import { Redirect, Route } from 'react-router-dom'
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react'
+import {
+  IonApp,
+  IonBadge,
+  IonIcon,
+  IonLabel,
+  IonRouterOutlet,
+  IonTabBar,
+  IonTabButton,
+  IonTabs,
+  setupIonicReact,
+} from '@ionic/react'
 import { IonReactRouter } from '@ionic/react-router'
+import { Redirect, Route } from 'react-router-dom'
+import { calendar, people, person } from 'ionicons/icons'
+import { useEffect, useState } from 'react'
 
 import Home from './pages/Home'
-import CreateContactPage from './pages/CreateContactPage'
-import EditContactPage from './pages/EditContactPage'
 import ContactDetailPage from './pages/ContactDetailPage'
 import LoginPage from './pages/LoginPage'
+import MisPacientesPage from './pages/MisPacientesPage'
+import PerfilMedicoPage from './pages/PerfilMedicoPage'
 import ProtectedRoute from './ProtectedRoute'
 import { isLogged } from './auth'
+import { loadVisitas } from './storage'
+import type { Visita } from './types'
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css'
@@ -23,41 +37,98 @@ import '@ionic/react/css/flex-utils.css'
 import '@ionic/react/css/display.css'
 import './theme/variables.css'
 
-setupIonicReact()
+setupIonicReact({ mode: 'ios' })
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
+function TabsLayout({
+  pendientesCount,
+  refreshPendientes,
+}: {
+  pendientesCount: number
+  refreshPendientes: () => void
+}) {
+  return (
+    <IonTabs>
       <IonRouterOutlet>
-        {/* Login público */}
-        <Route exact path="/login">
-          <LoginPage />
+        <Route exact path="/tabs/visitas">
+          <Home refreshPendientes={refreshPendientes} />
         </Route>
 
-        {/* Rutas protegidas */}
-        <ProtectedRoute exact path="/home">
-          <Home />
-        </ProtectedRoute>
+        <Route exact path="/tabs/visitas/:id">
+          <ContactDetailPage refreshPendientes={refreshPendientes} />
+        </Route>
 
-        <ProtectedRoute exact path="/contacts/create">
-          <CreateContactPage />
-        </ProtectedRoute>
+        <Route exact path="/tabs/pacientes">
+          <MisPacientesPage />
+        </Route>
 
-        <ProtectedRoute exact path="/contacts/detail/:id">
-          <ContactDetailPage />
-        </ProtectedRoute>
+        <Route exact path="/tabs/perfil">
+          <PerfilMedicoPage />
+        </Route>
 
-        <ProtectedRoute exact path="/contacts/edit/:id">
-          <EditContactPage />
-        </ProtectedRoute>
-
-        {/* Entrada: decide según token */}
-        <Route exact path="/">
-          <Redirect to={isLogged() ? '/home' : '/login'} />
+        <Route exact path="/tabs">
+          <Redirect to="/tabs/visitas" />
         </Route>
       </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
-)
+
+      <IonTabBar slot="bottom">
+        <IonTabButton tab="visitas" href="/tabs/visitas">
+          <IonIcon icon={calendar} />
+          <IonLabel>Visitas</IonLabel>
+          {pendientesCount > 0 && <IonBadge color="danger">{pendientesCount}</IonBadge>}
+        </IonTabButton>
+
+        <IonTabButton tab="pacientes" href="/tabs/pacientes">
+          <IonIcon icon={people} />
+          <IonLabel>Pacientes</IonLabel>
+        </IonTabButton>
+
+        <IonTabButton tab="perfil" href="/tabs/perfil">
+          <IonIcon icon={person} />
+          <IonLabel>Perfil</IonLabel>
+        </IonTabButton>
+      </IonTabBar>
+    </IonTabs>
+  )
+}
+
+const App: React.FC = () => {
+  const [visitas, setVisitas] = useState<Visita[]>([])
+
+  const refreshPendientes = () => {
+    setVisitas(loadVisitas())
+  }
+
+  useEffect(() => {
+    refreshPendientes()
+  }, [])
+
+  const pendientesCount = visitas.filter(v => v.estado === 'pendiente').length
+
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          {/* Login público */}
+          <Route exact path="/login">
+            <LoginPage />
+          </Route>
+
+          {/* Tabs protegidas */}
+          <ProtectedRoute path="/tabs">
+            <TabsLayout
+              pendientesCount={pendientesCount}
+              refreshPendientes={refreshPendientes}
+            />
+          </ProtectedRoute>
+
+          {/* Entrada */}
+          <Route exact path="/">
+            <Redirect to={isLogged() ? '/tabs/visitas' : '/login'} />
+          </Route>
+        </IonRouterOutlet>
+      </IonReactRouter>
+    </IonApp>
+  )
+}
 
 export default App

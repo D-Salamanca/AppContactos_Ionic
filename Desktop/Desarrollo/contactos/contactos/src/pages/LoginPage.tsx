@@ -6,48 +6,59 @@ import {
   IonInput,
   IonItem,
   IonLabel,
+  IonLoading,
   IonPage,
-  IonTitle,
-  IonToolbar,
   IonText,
+  IonTitle,
+  IonToast,
+  IonToolbar,
 } from '@ionic/react'
 import { useHistory } from 'react-router-dom'
 import { login } from '../auth'
 
 export default function LoginPage() {
   const history = useHistory()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [showToast, setShowToast] = useState(false)
 
   const handleLogin = () => {
-    const e = email.trim()
-    const p = password.trim()
+    setLoading(true)
 
-    if (e === 'user@mail.com' && p === '123') {
-      login()
-      history.push('/home')
-      return
-    }
+    setTimeout(() => {
+      setLoading(false)
 
-    setError('Credenciales incorrectas')
+      if (email.trim() === 'user@mail.com' && password.trim() === '123') {
+        login()
+        history.push('/tabs/visitas')
+      } else {
+        setShowToast(true)
+      }
+    }, 1500)
   }
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Login</IonTitle>
+          <IonTitle>MediCare+</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
+        <IonText>
+          <h2>Ingreso médico</h2>
+        </IonText>
+
         <IonItem>
           <IonLabel position="stacked">Email</IonLabel>
           <IonInput
             value={email}
             type="email"
-            onIonInput={ev => setEmail(ev.detail.value ?? '')}
+            onIonInput={e => setEmail(e.detail.value ?? '')}
           />
         </IonItem>
 
@@ -55,20 +66,40 @@ export default function LoginPage() {
           <IonLabel position="stacked">Password</IonLabel>
           <IonInput
             value={password}
-            type="password"
-            onIonInput={ev => setPassword(ev.detail.value ?? '')}
+            type={showPassword ? 'text' : 'password'}
+            onIonInput={e => setPassword(e.detail.value ?? '')}
           />
         </IonItem>
 
-        {error && (
-          <IonText color="danger">
-            <p>{error}</p>
-          </IonText>
-        )}
+        <IonButton
+          expand="block"
+          fill="outline"
+          className="ion-margin-top"
+          onClick={() => setShowPassword(prev => !prev)}
+        >
+          {showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        </IonButton>
 
-        <IonButton expand="block" className="ion-margin-top" onClick={handleLogin}>
+        <IonButton
+          expand="block"
+          className="ion-margin-top"
+          onClick={handleLogin}
+        >
           Login
         </IonButton>
+
+        <IonLoading
+          isOpen={loading}
+          message="Verificando credenciales..."
+        />
+
+        <IonToast
+          isOpen={showToast}
+          message="Credenciales incorrectas"
+          duration={1800}
+          color="danger"
+          onDidDismiss={() => setShowToast(false)}
+        />
       </IonContent>
     </IonPage>
   )

@@ -2,122 +2,140 @@ import {
   IonButton,
   IonContent,
   IonHeader,
+  IonInput,
   IonItem,
   IonLabel,
+  IonList,
   IonPage,
   IonTitle,
   IonToolbar,
-  IonText,
   useIonViewWillEnter,
 } from '@ionic/react'
-import { useHistory, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { loadContacts, saveContacts } from '../storage'
-import type { Contact } from '../types'
+import { loadVisitas, saveVisitas } from '../storage'
+import type { Medicamento, Visita } from '../types'
 
-const buildPreContacts = (): Contact[] => {
-  const now = new Date().toISOString()
-  return [
-    { id: 1, name: 'Ana', phone: 3001234567, createdAt: now, updatedAt: now },
-    { id: 2, name: 'Luis', phone: 3119876543, createdAt: now, updatedAt: now },
-    { id: 3, name: 'Sofía', phone: 3205554444, createdAt: now, updatedAt: now },
-  ]
-}
-
-const formatDate = (iso: string) => new Date(iso).toLocaleString()
-
-export default function ContactDetailPage() {
+export default function ContactDetailPage({
+  refreshPendientes,
+}: {
+  refreshPendientes: () => void
+}) {
   const { id } = useParams<{ id: string }>()
-  const history = useHistory()
-
-  const [contact, setContact] = useState<Contact | null>(null)
-  const [loaded, setLoaded] = useState(false)
+  const [visita, setVisita] = useState<Visita | null>(null)
+  const [nombre, setNombre] = useState('')
+  const [dosis, setDosis] = useState('')
 
   useIonViewWillEnter(() => {
-    let contacts = loadContacts()
+    const visitas = loadVisitas()
+    const found = visitas.find(v => v.id === Number(id)) || null
+    setVisita(found)
+  })
 
-    // Si entras directo al link y no hay nada guardado, crea los 3
-    if (contacts.length === 0) {
-      const pre = buildPreContacts()
-      saveContacts(pre)
-      contacts = pre
+  const persist = (updatedVisita: Visita) => {
+    const updated = loadVisitas().map(v =>
+      v.id === updatedVisita.id ? updatedVisita : v
+    )
+    saveVisitas(updated)
+    setVisita(updatedVisita)
+    refreshPendientes()
+  }
+
+  const agregarMedicamento = () => {
+    if (!visita || !nombre.trim() || !dosis.trim()) return
+
+    const nuevo: Medicamento = {
+      id: Date.now(),
+      nombre,
+      dosis,
     }
 
-    const found = contacts.find(c => c.id === Number(id)) ?? null
-    setContact(found)
-    setLoaded(true)
-  })
+    persist({
+      ...visita,
+      receta: [...visita.receta, nuevo],
+    })
+
+    setNombre('')
+    setDosis('')
+  }
+
+  const finalizarVisita = () => {
+    if (!visita) return
+
+    persist({
+      ...visita,
+      estado: 'finalizada',
+    })
+  }
+
+  if (!visita) return null
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Contact Detail</IonTitle>
+          <IonTitle>Detalle visita</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
-        {!loaded ? (
-          <IonText color="medium">
-            <p>Cargando...</p>
-          </IonText>
-        ) : !contact ? (
-          <>
-            <IonText color="danger">
-              <p>Contacto no encontrado.</p>
-            </IonText>
+        <IonItem>
+          <IonLabel>
+            <h2>{visita.paciente}</h2>
+            <p>{visita.direccion}</p>
+            <p>{visita.hora}</p>
+            <p>Estado: {visita.estado}</p>
+            {visita.motivoCancelacion && (
+              <p>Motivo cancelación: {visita.motivoCancelacion}</p>
+            )}
+          </IonLabel>
+        </IonItem>
 
-            <IonButton expand="block" onClick={() => history.push('/home')}>
-              Volver
-            </IonButton>
-          </>
-        ) : (
-          <>
-            <IonItem>
+        <IonItem>
+          <IonLabel position="stacked">Medicamento</IonLabel>
+          <IonInput
+            value={nombre}
+            placeholder="Ej: Acetaminofén"
+            onIonInput={e => setNombre(e.detail.value ?? '')}
+          />
+        </IonItem>
+
+        <IonItem>
+          <IonLabel position="stacked">Dosis</IonLabel>
+          <IonInput
+            value={dosis}
+            placeholder="Ej: 500 mg cada 8 horas"
+            onIonInput={e => setDosis(e.detail.value ?? '')}
+          />
+        </IonItem>
+
+        <IonButton
+          expand="block"
+          className="ion-margin-top"
+          onClick={agregarMedicamento}
+        >
+          Agregar a receta
+        </IonButton>
+
+        <IonList>
+          {visita.receta.map(m => (
+            <IonItem key={m.id}>
               <IonLabel>
-                <h2 style={{ fontWeight: 700, margin: 0 }}>Name</h2>
-                <p style={{ margin: 0 }}>{contact.name}</p>
+                <h3>{m.nombre}</h3>
+                <p>{m.dosis}</p>
               </IonLabel>
             </IonItem>
+          ))}
+        </IonList>
 
-            <IonItem>
-              <IonLabel>
-                <h2 style={{ fontWeight: 700, margin: 0 }}>Phone</h2>
-                <p style={{ margin: 0 }}>{contact.phone}</p>
-              </IonLabel>
-            </IonItem>
-
-            <IonItem>
-              <IonLabel>
-                <h2 style={{ fontWeight: 700, margin: 0 }}>Created At</h2>
-                <p style={{ margin: 0 }}>{formatDate(contact.createdAt)}</p>
-              </IonLabel>
-            </IonItem>
-
-            <IonItem>
-              <IonLabel>
-                <h2 style={{ fontWeight: 700, margin: 0 }}>Last Updated</h2>
-                <p style={{ margin: 0 }}>{formatDate(contact.updatedAt)}</p>
-              </IonLabel>
-            </IonItem>
-
-            <IonButton
-              expand="block"
-              className="ion-margin-top"
-              onClick={() => history.push(`/contacts/edit/${contact.id}`)}
-            >
-              Edit
-            </IonButton>
-
-            <IonButton
-              expand="block"
-              fill="outline"
-              onClick={() => history.push('/home')}
-            >
-              Back
-            </IonButton>
-          </>
-        )}
+        <IonButton
+          expand="block"
+          color="success"
+          className="ion-margin-top"
+          onClick={finalizarVisita}
+        >
+          Finalizar visita
+        </IonButton>
       </IonContent>
     </IonPage>
   )
