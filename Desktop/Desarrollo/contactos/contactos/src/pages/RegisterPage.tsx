@@ -14,15 +14,15 @@ import {
 import { useHistory } from 'react-router-dom'
 import { useAuthContext } from '../context/AuthContext'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const history = useHistory()
-  const { login } = useAuthContext()
+  const { register } = useAuthContext()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     const e = email.trim()
     const p = password.trim()
 
@@ -31,11 +31,16 @@ export default function LoginPage() {
       return
     }
 
+    if (p.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+
     try {
-      await login(e, p)
+      await register(e, p)
       history.push('/home')
     } catch (err: any) {
-      setError('Credenciales incorrectas')
+      setError(err.message)
     }
   }
 
@@ -43,7 +48,7 @@ export default function LoginPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Login</IonTitle>
+          <IonTitle>Register</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -53,7 +58,7 @@ export default function LoginPage() {
           <IonInput
             value={email}
             type="email"
-            onIonInput={ev => setEmail(ev.detail.value ?? '')}
+            onIonInput={e => setEmail(e.detail.value ?? '')}
           />
         </IonItem>
 
@@ -62,7 +67,7 @@ export default function LoginPage() {
           <IonInput
             value={password}
             type="password"
-            onIonInput={ev => setPassword(ev.detail.value ?? '')}
+            onIonInput={e => setPassword(e.detail.value ?? '')}
           />
         </IonItem>
 
@@ -72,16 +77,16 @@ export default function LoginPage() {
           </IonText>
         )}
 
-        <IonButton expand="block" className="ion-margin-top" onClick={handleLogin}>
-          Login
+        <IonButton expand="block" className="ion-margin-top" onClick={handleRegister}>
+          Register
         </IonButton>
 
         <IonButton
           expand="block"
           fill="outline"
-          onClick={() => history.push('/register')}
+          onClick={() => history.push('/login')}
         >
-          Create account
+          Already have an account? Login
         </IonButton>
       </IonContent>
     </IonPage>

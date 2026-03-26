@@ -1,5 +1,5 @@
 import { Route, Redirect } from 'react-router-dom'
-import { isLogged } from './auth'
+import { useAuthContext } from './context/AuthContext'
 
 type Props = {
   path: string
@@ -8,7 +8,14 @@ type Props = {
 }
 
 export default function ProtectedRoute({ path, exact = false, children }: Props) {
-  if (!isLogged()) {
+  const { user, loading } = useAuthContext()
+
+  // Mientras Firebase verifica si hay sesión activa, no redirige
+  if (loading) {
+    return null
+  }
+
+  if (!user) {
     return <Redirect to="/login" />
   }
 

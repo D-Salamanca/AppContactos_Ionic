@@ -13,30 +13,30 @@ import {
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
+  IonBadge,
   IonButtons,
   IonButton,
   IonText,
-  useIonViewWillEnter,
 } from '@ionic/react'
 import { add } from 'ionicons/icons'
 import { useHistory } from 'react-router-dom'
-import { useContactsContext } from '../context/ContactsContext'
+import { useTasksContext } from '../context/TasksContext'
 import useNetwork from '../hooks/useNetwork'
 
-export default function ContactsListPage() {
+export default function TasksListPage() {
   const history = useHistory()
-  const { contacts, isPending, loadContacts, deleteContact } = useContactsContext()
+  const { tasks, deleteTask, updateTask } = useTasksContext()
   const { isOnline } = useNetwork()
 
-  useIonViewWillEnter(() => {
-    loadContacts()
-  })
+  const handleToggle = async (task: any) => {
+    await updateTask(task.id, { ...task, completed: !task.completed })
+  }
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Contacts</IonTitle>
+          <IonTitle>Tasks</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => history.push('/home')}>Back</IonButton>
           </IonButtons>
@@ -52,30 +52,40 @@ export default function ContactsListPage() {
           </IonText>
         )}
 
-        {isPending && (
-          <IonText color="medium">
-            <p className="ion-text-center">Cargando...</p>
-          </IonText>
-        )}
-
         <IonList>
-          {contacts.map((c: any) => (
-            <IonItemSliding key={c.id}>
+          {tasks.map((t: any) => (
+            <IonItemSliding key={t.id}>
               <IonItem
                 button
-                routerLink={`/contacts/detail/${c.id}`}
+                routerLink={`/tasks/detail/${t.id}`}
               >
                 <IonLabel>
-                  <h2 style={{ fontWeight: 700 }}>{c.name}</h2>
-                  <p>{c.phone}</p>
+                  <h2 style={{
+                    fontWeight: 700,
+                    textDecoration: t.completed ? 'line-through' : 'none'
+                  }}>
+                    {t.title}
+                  </h2>
+                  <p>{t.description}</p>
                 </IonLabel>
+                <IonBadge color={t.completed ? 'success' : 'medium'}>
+                  {t.completed ? 'Done' : 'Todo'}
+                </IonBadge>
               </IonItem>
 
               <IonItemOptions side="end">
                 <IonItemOption
+                  color="success"
+                  disabled={!isOnline}
+                  onClick={() => handleToggle(t)}
+                >
+                  {t.completed ? 'Undo' : 'Done'}
+                </IonItemOption>
+
+                <IonItemOption
                   color="primary"
                   disabled={!isOnline}
-                  routerLink={`/contacts/edit/${c.id}`}
+                  routerLink={`/tasks/edit/${t.id}`}
                 >
                   Edit
                 </IonItemOption>
@@ -83,7 +93,7 @@ export default function ContactsListPage() {
                 <IonItemOption
                   color="danger"
                   disabled={!isOnline}
-                  onClick={() => deleteContact(c.id)}
+                  onClick={() => deleteTask(t.id)}
                 >
                   Delete
                 </IonItemOption>
@@ -95,7 +105,7 @@ export default function ContactsListPage() {
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton
             disabled={!isOnline}
-            routerLink="/contacts/create"
+            routerLink="/tasks/create"
           >
             <IonIcon icon={add} />
           </IonFabButton>

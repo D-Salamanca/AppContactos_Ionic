@@ -2,15 +2,19 @@ import { Redirect, Route } from 'react-router-dom'
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react'
 import { IonReactRouter } from '@ionic/react-router'
 
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import Home from './pages/Home'
+import ContactsListPage from './pages/ContactsListPage'
 import CreateContactPage from './pages/CreateContactPage'
 import EditContactPage from './pages/EditContactPage'
 import ContactDetailPage from './pages/ContactDetailPage'
-import LoginPage from './pages/LoginPage'
+import TasksListPage from './pages/TasksListPage'
+import TaskFormPage from './pages/TaskFormPage'
+import TaskDetailPage from './pages/TaskDetailPage'
+import FruitsListPage from './pages/FruitsListPage'
 import ProtectedRoute from './ProtectedRoute'
-import { isLogged } from './auth'
 
-/* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css'
 import '@ionic/react/css/normalize.css'
 import '@ionic/react/css/structure.css'
@@ -29,32 +33,65 @@ const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
       <IonRouterOutlet>
-        {/* Login público */}
+
+        {/* Rutas públicas */}
         <Route exact path="/login">
           <LoginPage />
         </Route>
 
-        {/* Rutas protegidas */}
+        <Route exact path="/register">
+          <RegisterPage />
+        </Route>
+
+        {/* Home */}
         <ProtectedRoute exact path="/home">
           <Home />
+        </ProtectedRoute>
+
+        {/* Contacts */}
+        <ProtectedRoute exact path="/contacts">
+          <ContactsListPage />
         </ProtectedRoute>
 
         <ProtectedRoute exact path="/contacts/create">
           <CreateContactPage />
         </ProtectedRoute>
 
-        <ProtectedRoute exact path="/contacts/detail/:id">
-          <ContactDetailPage />
-        </ProtectedRoute>
-
         <ProtectedRoute exact path="/contacts/edit/:id">
           <EditContactPage />
         </ProtectedRoute>
 
-        {/* Entrada: decide según token */}
+        <ProtectedRoute exact path="/contacts/detail/:id">
+          <ContactDetailPage />
+        </ProtectedRoute>
+
+        {/* Tasks */}
+        <ProtectedRoute exact path="/tasks">
+          <TasksListPage />
+        </ProtectedRoute>
+
+        <ProtectedRoute exact path="/tasks/create">
+          <TaskFormPage />
+        </ProtectedRoute>
+
+        <ProtectedRoute exact path="/tasks/edit/:id">
+          <TaskFormPage />
+        </ProtectedRoute>
+
+        <ProtectedRoute exact path="/tasks/detail/:id">
+          <TaskDetailPage />
+        </ProtectedRoute>
+
+        {/* Fruits */}
+        <ProtectedRoute exact path="/fruits">
+          <FruitsListPage />
+        </ProtectedRoute>
+
+        {/* Entrada por defecto */}
         <Route exact path="/">
-          <Redirect to={isLogged() ? '/home' : '/login'} />
+          <Redirect to="/login" />
         </Route>
+
       </IonRouterOutlet>
     </IonReactRouter>
   </IonApp>

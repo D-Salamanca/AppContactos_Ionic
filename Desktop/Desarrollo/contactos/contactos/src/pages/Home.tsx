@@ -7,71 +7,23 @@ import {
   IonList,
   IonItem,
   IonLabel,
-  IonFab,
-  IonFabButton,
   IonIcon,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption,
-  useIonViewWillEnter,
   IonButtons,
   IonButton,
-  IonAlert,
+  IonBadge,
 } from '@ionic/react'
-import { add } from 'ionicons/icons'
-import { useState } from 'react'
+import { peopleOutline, checkboxOutline, leafOutline } from 'ionicons/icons'
 import { useHistory } from 'react-router-dom'
-import { loadContacts, saveContacts } from '../storage'
-import type { Contact } from '../types'
-import { logout } from '../auth'
-import './Home.css'
-
-const buildPreContacts = (): Contact[] => {
-  const now = new Date().toISOString()
-  return [
-    { id: 1, name: 'Ana', phone: 3001234567, createdAt: now, updatedAt: now },
-    { id: 2, name: 'Luis', phone: 3119876543, createdAt: now, updatedAt: now },
-    { id: 3, name: 'Sofía', phone: 3205554444, createdAt: now, updatedAt: now },
-  ]
-}
+import { useAuthContext } from '../context/AuthContext'
+import useNetwork from '../hooks/useNetwork'
 
 const Home: React.FC = () => {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [showAlert, setShowAlert] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-
   const history = useHistory()
+  const { logout } = useAuthContext()
+  const { isOnline, connectionType } = useNetwork()
 
-  useIonViewWillEnter(() => {
-    let current = loadContacts()
-
-    if (current.length === 0) {
-      const pre = buildPreContacts()
-      saveContacts(pre)
-      current = pre
-    }
-
-    setContacts(current)
-  })
-
-  const confirmDelete = (id: number) => {
-    setSelectedId(id)
-    setShowAlert(true)
-  }
-
-  const deleteContact = () => {
-    if (selectedId === null) return
-
-    const updated = contacts.filter(c => c.id !== selectedId)
-    setContacts(updated)
-    saveContacts(updated)
-
-    setShowAlert(false)
-    setSelectedId(null)
-  }
-
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     history.push('/login')
   }
 
@@ -79,8 +31,7 @@ const Home: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Contacts</IonTitle>
-
+          <IonTitle>Challenge 06</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleLogout}>Logout</IonButton>
           </IonButtons>
@@ -88,72 +39,51 @@ const Home: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <div className="home-wrap">
 
-          <IonList className="home-list">
-            {contacts.map(c => (
-              <IonItemSliding key={c.id}>
+        <IonItem lines="none" className="ion-margin-bottom">
+          <IonLabel>
+            <h2>Network Status</h2>
+            <p>Type: {connectionType ?? 'unknown'}</p>
+          </IonLabel>
+          <IonBadge color={isOnline ? 'success' : 'danger'}>
+            {isOnline ? 'Online' : 'Offline'}
+          </IonBadge>
+        </IonItem>
 
-                <IonItem
-                  className="home-item"
-                  button
-                  routerLink={`/contacts/detail/${c.id}`}
-                >
-                  <IonLabel>
-                    <h2 className="home-name">{c.name}</h2>
-                    <p className="home-phone">{c.phone}</p>
-                  </IonLabel>
-                </IonItem>
+        <IonList>
+          <IonItem
+            button
+            onClick={() => history.push('/contacts')}
+          >
+            <IonIcon icon={peopleOutline} slot="start" />
+            <IonLabel>
+              <h2>Contacts</h2>
+              <p>Firebase Firestore</p>
+            </IonLabel>
+          </IonItem>
 
-                <IonItemOptions side="end">
-                  <IonItemOption
-                    color="primary"
-                    routerLink={`/contacts/edit/${c.id}`}
-                  >
-                    Edit
-                  </IonItemOption>
+          <IonItem
+            button
+            onClick={() => history.push('/tasks')}
+          >
+            <IonIcon icon={checkboxOutline} slot="start" />
+            <IonLabel>
+              <h2>Tasks</h2>
+              <p>Firebase Realtime Database</p>
+            </IonLabel>
+          </IonItem>
 
-                  <IonItemOption
-                    color="danger"
-                    onClick={() => confirmDelete(c.id)}
-                  >
-                    Delete
-                  </IonItemOption>
-                </IonItemOptions>
-
-              </IonItemSliding>
-            ))}
-          </IonList>
-
-        </div>
-
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton routerLink="/contacts/create">
-            <IonIcon icon={add} />
-          </IonFabButton>
-        </IonFab>
-
-        <IonAlert
-          isOpen={showAlert}
-          header="Eliminar contacto"
-          message="¿Estás seguro que deseas eliminar este contacto?"
-          buttons={[
-            {
-              text: 'Cancelar',
-              role: 'cancel',
-              handler: () => {
-                setShowAlert(false)
-                setSelectedId(null)
-              },
-            },
-            {
-              text: 'Eliminar',
-              role: 'destructive',
-              handler: deleteContact,
-            },
-          ]}
-          onDidDismiss={() => setShowAlert(false)}
-        />
+          <IonItem
+            button
+            onClick={() => history.push('/fruits')}
+          >
+            <IonIcon icon={leafOutline} slot="start" />
+            <IonLabel>
+              <h2>Fruits</h2>
+              <p>Dexie Local Database</p>
+            </IonLabel>
+          </IonItem>
+        </IonList>
 
       </IonContent>
     </IonPage>

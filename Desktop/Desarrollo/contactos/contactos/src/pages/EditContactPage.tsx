@@ -12,7 +12,7 @@ import {
   IonText,
 } from '@ionic/react'
 import { useHistory, useParams } from 'react-router-dom'
-import { loadContacts, saveContacts } from '../storage'
+import { useContactsContext } from '../context/ContactsContext'
 import type { Contact } from '../types'
 
 export default function EditContactPage() {
@@ -20,12 +20,13 @@ export default function EditContactPage() {
   const { id } = useParams<{ id: string }>()
   const contactId = Number(id)
 
+  const { contacts, updateContact } = useContactsContext()
+
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('') // input siempre es string
+  const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const contacts = loadContacts()
     const c = contacts.find(x => x.id === contactId)
 
     if (!c) {
@@ -35,7 +36,7 @@ export default function EditContactPage() {
 
     setName(c.name)
     setPhone(String(c.phone))
-  }, [contactId, history])
+  }, [contactId])
 
   const update = () => {
     const n = name.trim()
@@ -53,15 +54,16 @@ export default function EditContactPage() {
     }
 
     const now = new Date().toISOString()
-    const contacts = loadContacts()
 
-    const updatedContacts: Contact[] = contacts.map(c =>
-      c.id === contactId
-        ? { ...c, name: n, phone: pNum, updatedAt: now }
-        : c
-    )
+    const updatedContact: Contact = {
+      id: contactId,
+      name: n,
+      phone: pNum,
+      createdAt: now,
+      updatedAt: now,
+    }
 
-    saveContacts(updatedContacts)
+    updateContact(updatedContact)
     history.push('/home')
   }
 

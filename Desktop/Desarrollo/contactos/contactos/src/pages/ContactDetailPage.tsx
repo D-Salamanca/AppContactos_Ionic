@@ -8,45 +8,18 @@ import {
   IonTitle,
   IonToolbar,
   IonText,
-  useIonViewWillEnter,
 } from '@ionic/react'
 import { useHistory, useParams } from 'react-router-dom'
-import { useState } from 'react'
-import { loadContacts, saveContacts } from '../storage'
-import type { Contact } from '../types'
-
-const buildPreContacts = (): Contact[] => {
-  const now = new Date().toISOString()
-  return [
-    { id: 1, name: 'Ana', phone: 3001234567, createdAt: now, updatedAt: now },
-    { id: 2, name: 'Luis', phone: 3119876543, createdAt: now, updatedAt: now },
-    { id: 3, name: 'Sofía', phone: 3205554444, createdAt: now, updatedAt: now },
-  ]
-}
+import { useContactsContext } from '../context/ContactsContext'
 
 const formatDate = (iso: string) => new Date(iso).toLocaleString()
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
   const history = useHistory()
+  const { contacts } = useContactsContext()
 
-  const [contact, setContact] = useState<Contact | null>(null)
-  const [loaded, setLoaded] = useState(false)
-
-  useIonViewWillEnter(() => {
-    let contacts = loadContacts()
-
-    // Si entras directo al link y no hay nada guardado, crea los 3
-    if (contacts.length === 0) {
-      const pre = buildPreContacts()
-      saveContacts(pre)
-      contacts = pre
-    }
-
-    const found = contacts.find(c => c.id === Number(id)) ?? null
-    setContact(found)
-    setLoaded(true)
-  })
+  const contact = contacts.find(c => c.id === Number(id)) ?? null
 
   return (
     <IonPage>
@@ -57,11 +30,7 @@ export default function ContactDetailPage() {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        {!loaded ? (
-          <IonText color="medium">
-            <p>Cargando...</p>
-          </IonText>
-        ) : !contact ? (
+        {!contact ? (
           <>
             <IonText color="danger">
               <p>Contacto no encontrado.</p>

@@ -10,24 +10,18 @@ import {
   IonTitle,
   IonToolbar,
   IonText,
-  useIonViewWillEnter,
 } from '@ionic/react'
 import { useHistory } from 'react-router-dom'
-import { loadContacts, saveContacts } from '../storage'
+import { useContactsContext } from '../context/ContactsContext'
 import type { Contact } from '../types'
 
 export default function CreateContactPage() {
   const history = useHistory()
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('') // se captura como string y se convierte a number
-  const [error, setError] = useState('')
+  const { addContact } = useContactsContext()
 
-  // Limpia inputs cada vez que entras a la página
-  useIonViewWillEnter(() => {
-    setName('')
-    setPhone('')
-    setError('')
-  })
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [error, setError] = useState('')
 
   const create = () => {
     const n = name.trim()
@@ -38,7 +32,6 @@ export default function CreateContactPage() {
       return
     }
 
-    // convertir a número
     const pNum = Number(pRaw)
     if (!Number.isFinite(pNum)) {
       setError('El teléfono debe ser un número')
@@ -46,7 +39,6 @@ export default function CreateContactPage() {
     }
 
     const now = new Date().toISOString()
-    const contacts = loadContacts()
 
     const newContact: Contact = {
       id: Date.now(),
@@ -56,7 +48,7 @@ export default function CreateContactPage() {
       updatedAt: now,
     }
 
-    saveContacts([newContact, ...contacts])
+    addContact(newContact)
     history.push('/home')
   }
 
